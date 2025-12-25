@@ -1,30 +1,29 @@
-
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { fetchDailyReview, generateCaricature, generateAudioBila } from './services/geminiService';
 import { AppState, DailyReview } from './types';
 
 // Components
 const Header: React.FC<{ date: string }> = ({ date }) => (
-  <header class="gradient-header sticky top-0 z-50 shadow-md">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div class="flex justify-between items-center h-16">
-        <div class="flex items-center gap-3">
-          <div class="bg-white/90 p-1.5 rounded-full shadow-sm flex items-center justify-center">
-            <span class="material-symbols-outlined text-senegal-green text-2xl">pest_control</span>
+  <header className="gradient-header sticky top-0 z-50 shadow-md">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="flex justify-between items-center h-16">
+        <div className="flex items-center gap-3">
+          <div className="bg-white/90 p-1.5 rounded-full shadow-sm flex items-center justify-center">
+            <span className="material-symbols-outlined text-senegal-green text-2xl">pest_control</span>
           </div>
-          <div class="flex flex-col">
-            <h1 class="text-white font-serif font-bold text-xl leading-tight tracking-wide drop-shadow-md">Le Cafard Libéré</h1>
-            <span class="text-white/90 text-[10px] font-medium uppercase tracking-wider">L'édition du Jour - Mr Cissé</span>
+          <div className="flex flex-col">
+            <h1 className="text-white font-serif font-bold text-xl leading-tight tracking-wide drop-shadow-md">Le Cafard Libéré</h1>
+            <span className="text-white/90 text-[10px] font-medium uppercase tracking-wider">L'édition du Jour - Mr Cissé</span>
           </div>
         </div>
-        <div class="hidden md:flex items-center gap-2 bg-white/20 backdrop-blur-sm px-4 py-1.5 rounded-full border border-white/30">
-          <span class="material-symbols-outlined text-white text-sm">calendar_today</span>
-          <span class="text-white text-sm font-semibold">{date}</span>
+        <div className="hidden md:flex items-center gap-2 bg-white/20 backdrop-blur-sm px-4 py-1.5 rounded-full border border-white/30">
+          <span className="material-symbols-outlined text-white text-sm">calendar_today</span>
+          <span className="text-white text-sm font-semibold">{date}</span>
         </div>
-        <div class="flex items-center gap-3">
-          <button class="bg-white/90 hover:bg-white text-senegal-green px-3 py-1.5 rounded-lg text-sm font-bold flex items-center gap-2 shadow-sm transition-colors">
-            <span class="material-symbols-outlined text-[20px]">account_circle</span>
-            <span class="hidden sm:inline">Mr Cissé</span>
+        <div className="flex items-center gap-3">
+          <button className="bg-white/90 hover:bg-white text-senegal-green px-3 py-1.5 rounded-lg text-sm font-bold flex items-center gap-2 shadow-sm transition-colors">
+            <span className="material-symbols-outlined text-[20px]">account_circle</span>
+            <span className="hidden sm:inline">Mr Cissé</span>
           </button>
         </div>
       </div>

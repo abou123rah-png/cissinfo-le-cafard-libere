@@ -1,94 +1,105 @@
-import { GoogleGenerativeAI, SchemaType, GenerateContentResponse } from "@google/generative-ai";
+import { GoogleGenerativeAI } from "@google/generative-ai";
+import axios from 'axios';
 import { DailyReview } from "../types";
 
-// Use GEMINI_API_KEY from .env (Vite exposes it via process.env)
+// Clé API Gemini depuis .env
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 
+// Revue de presse (sans schéma strict, plus stable)
 export const fetchDailyReview = async (date: string): Promise<DailyReview> => {
   const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
   const prompt = `Tu es l'intelligence artificielle de l'application 'L'ENSEIGNANT EN SERVICE - Mr Cissé'. Ta mission est de rédiger la revue de presse quotidienne intitulée 'Le Cafard Libéré du Jour'.
-  
-  Consignes : Nous sommes le ${date}. Utilise tes capacités de recherche pour analyser l'actualité sénégalaise des dernières 24 heures uniquement sur : APS, Seneweb, SeneNews, Le Soleil, Senego, et WiwSport.
-  
-  Génère une réponse structurée en JSON strictement selon le schéma suivant. 
-  Ton ton doit être : Éducatif, rigoureux, panafricain et inspirant. Utilise un français impeccable avec quelques expressions sénégalaises subtiles (ex: Teranga, Jambar).`;
 
-  const result = await model.generateContent({
-    contents: [{ role: "user", parts: [{ text: prompt }] }],
-    generationConfig: {
-      responseMimeType: "application/json",
-      responseSchema: {
-        type: SchemaType.OBJECT,
-        properties: {
-          date: { type: SchemaType.STRING },
-          debateQuestion: { type: SchemaType.STRING },
-          summary: { type: SchemaType.STRING },
-          headlines: {
-            type: SchemaType.ARRAY,
-            items: {
-              type: SchemaType.OBJECT,
-              properties: {
-                title: { type: SchemaType.STRING },
-                category: { type: SchemaType.STRING },
-                source: { type: SchemaType.STRING },
-                content: { type: SchemaType.STRING },
-                confidence: { type: SchemaType.NUMBER },
-              },
-              required: ["title", "category", "source", "content", "confidence"]
-            }
-          },
-          opportunities: {
-            type: SchemaType.ARRAY,
-            items: {
-              type: SchemaType.OBJECT,
-              properties: {
-                type: { type: SchemaType.STRING },
-                title: { type: SchemaType.STRING },
-                deadline: { type: SchemaType.STRING }
-              },
-              required: ["type", "title", "deadline"]
-            }
-          },
-          innovation: {
-            type: SchemaType.OBJECT,
-            properties: {
-              title: { type: SchemaType.STRING },
-              description: { type: SchemaType.STRING }
-            },
-            required: ["title", "description"]
-          },
-          debateDetails: {
-            type: SchemaType.OBJECT,
-            properties: {
-              pro: { type: SchemaType.STRING },
-              con: { type: SchemaType.STRING },
-              proExpert: { type: SchemaType.STRING },
-              conExpert: { type: SchemaType.STRING }
-            },
-            required: ["pro", "con", "proExpert", "conExpert"]
-          },
-          motEnseignant: { type: SchemaType.STRING },
-          sources: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } },
-          caricatureCaption: { type: SchemaType.STRING }
-        },
-        required: ["date", "debateQuestion", "summary", "headlines", "opportunities", "innovation", "debateDetails", "motEnseignant", "sources", "caricatureCaption"]
-      }
+Consignes : Nous sommes le ${date}. Utilise tes capacités de recherche pour analyser l'actualité sénégalaise des dernières 24 heures uniquement sur : APS, Seneweb, SeneNews, Le Soleil, Senego, et WiwSport.
+
+Réponds UNIQUEMENT avec un objet JSON valide (pas de texte avant/après, pas de \`\`\`json, pas de markdown). Utilise exactement ces clés :
+- "date": string (la date donnée)
+- "debateQuestion": string (question de débat)
+- "summary": string (résumé principal)
+- "headlines": array d'objets { "title": string, "category": string, "source": string, "content": string, "confidence": number }
+- "opportunities": array d'objets { "type": string, "title": string, "deadline": string }
+- "innovation": objet { "title": string, "description": string }
+- "debateDetails": objet { "pro": string, "con": string, "proExpert": string, "conExpert": string }
+- "motEnseignant": string
+- "sources": array de string
+- "caricatureCaption": string (légende pour la caricature)
+
+Ton ton : Éducatif, rigoureux, panafricain et inspirant. Français impeccable avec Teranga, Jambar.`;
+
+  try {
+    const result = await model.generateContent(prompt);
+    const text = result.response.text();
+
+    // Debug : voir exactement ce que Gemini renvoie
+    console.log("Réponse brute Gemini :", text);
+
+    // Nettoyage : enlève markdown si présent
+    const cleaned = text.replace(/^```json\s*/, '').replace(/\s*```$/, '').trim();
+
+    const parsed = JSON.parse(cleaned);
+
+    if (!parsed || typeof parsed !== 'object') {
+      throw new Error("Réponse Gemini n'est pas un objet JSON valide");
     }
-  });
 
-  const response = await result.response;
-  return JSON.parse(response.text());
+    console.log("JSON parsé OK :", parsed);
+    return parsed as DailyReview;
+
+  } catch (error) {
+    console.error("Erreur fetchDailyReview :", error);
+    throw error;
+  }
 };
 
+// Génération de caricature avec Hugging Face (FLUX.1-dev, optimisé)
 export const generateCaricature = async (caption: string): Promise<string> => {
-  // Note: Gemini API doesn't generate images. Placeholder for now (use a real image gen API if needed).
-  console.warn("Image generation not supported; returning placeholder.");
-  return 'https://picsum.photos/800/600';
+  const apiKey = process.env.HUGGINGFACE_API_KEY;
+
+  if (!apiKey) {
+    console.warn("HUGGINGFACE_API_KEY non trouvée → placeholder");
+    return `https://picsum.photos/800/600?text=Ajouter+HF_API_KEY`;
+  }
+
+  try {
+    console.log("Génération caricature HF pour :", caption);
+
+    const prompt = `Crée une caricature satirique très exagérée et humoristique au style bande dessinée sénégalaise moderne, couleurs ultra vives et contrastées, ambiance Teranga et Jambar, expression faciale comique, dramatique et ironique, paysage mixte urbain-rural avec éléments absurdes et drôles. Représente fidèlement et avec précision cette légende exacte : "${caption}". Ajoute une touche d'ironie politique, détails drôles, symboles sénégalais, pas de réalisme. Haute qualité, style dessin animé satirique. Variante unique : ${Math.random().toString(36).substring(7)}`;
+
+    const response = await axios.post(
+      "https://api-inference.huggingface.co/models/black-forest-labs/FLUX.1-dev",
+      {
+        inputs: prompt,
+        parameters: {
+          num_inference_steps: 35,
+          guidance_scale: 8.0,
+          negative_prompt: "flou, réaliste, photo, moche, basse qualité, terne"
+        }
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+        },
+        responseType: "arraybuffer",
+      }
+    );
+
+    const blob = new Blob([response.data], { type: "image/png" });
+    const imageUrl = URL.createObjectURL(blob);
+
+    console.log("Image HF générée OK !");
+    return imageUrl;
+
+  } catch (error: unknown) {
+    const errMsg = error instanceof Error ? error.message : "Erreur inconnue";
+    console.error("Erreur HF génération image :", errMsg);
+    return `https://picsum.photos/800/600?text=Erreur+HF`;
+  }
 };
 
+// Placeholder audio
 export const generateAudioBila = async (text: string): Promise<string> => {
-  // Note: Gemini API doesn't generate audio/TTS. Placeholder for now (use Google Cloud TTS or browser SpeechSynthesis if needed).
-  console.warn("Audio generation not supported; returning empty base64.");
-  return '';  // Or throw new Error("Audio not supported");
+  console.warn("Audio-Bila non implémenté → placeholder vide");
+  return '';
 };
