@@ -1,0 +1,7 @@
+{
+  "name": "Le Cafard Libéré - Mr Cissé",
+  "description": "Une revue de presse quotidienne satirique et éducative pour l'enseignant sénégalais moderne, propulsée par l'intelligence artificielle Gemini.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}
